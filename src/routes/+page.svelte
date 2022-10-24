@@ -45,15 +45,27 @@
       return []
     }
 
-    let variations = generateAllPossibleVariations(number.replace(' ', ''))
+    // if there are spaces, check for words, not all variations
+    if (number.indexOf(' ') >= 0) {
+      let numberWords = number.split(' ')
+      numberWords.forEach(word => {
+        let possibility = ntw[word]
+        if (possibility !== undefined) {
+          possibilities.push(word + ' -> ' + possibility.join(', '))
+        }
+      })
+      return possibilities
+    } else {
+      let variations = generateAllPossibleVariations(number.replace(' ', ''))
 
-    variations.forEach(variation => {
-      let possibility = ntw[variation]
-      if (possibility !== undefined) {
-        possibilities.push(variation + ' -> ' + possibility.join(', '))
-      }
-    })
-    return possibilities
+      variations.forEach(variation => {
+        let possibility = ntw[variation]
+        if (possibility !== undefined) {
+          possibilities.push(variation + ' -> ' + possibility.join(', '))
+        }
+      })
+      return possibilities
+    }
   }
 
   $: possibilities = findPossibilities(number)
@@ -78,7 +90,7 @@
     <p class="monospace" id="sync-box">syncs with other? <input type="checkbox" bind:checked={sync}></p>
   
     <h1>Phone Number to Words</h1>
-    <p class="hint">This input takes numbers and tries to find words that match them based on the keypad's corresponding letters.</p>
+    <p class="hint">This input takes numbers and tries to find words that match them based on the keypad's corresponding letters. If spaces are included, we look for matches on words only.</p>
     <p></p>
     <input type="text" bind:value={number} placeholder="enter numbers here" class="monospace"> 
     <ul class="monospace results">
