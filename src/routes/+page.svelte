@@ -22,7 +22,56 @@
   // FOR CONVERTING NUMBERS TO WORDS
   let number = ''
 
+  let perfect
+
   import ntw from '$lib/numbers-to-words.json'
+
+  function generateBeginningPossibilities(text) {
+    let variations = []
+    let end = 0
+    while (end < text.length + 1) {
+      variations.push(text.slice(0, end))
+      end++
+    }
+
+    return variations
+  }
+
+  function generatePerfectOutcomes(outcomes, completed) {
+    let found = []
+    outcomes.forEach(outcome => {
+      let words = []
+
+      if (outcome.remaining.length == 0) {
+        completed.push(outcome)
+      }
+
+      generateBeginningPossibilities(outcome.remaining).forEach(possibility => {
+        let word = ntw[possibility]
+        if (word != undefined) {
+          word.forEach(w => {
+            words.push({
+              word: w,
+              subject: possibility
+            })
+          })
+        }
+      })
+      words.forEach(wrd => {
+        let toPush = [
+          {
+            subject: wrd.subject,
+            word: wrd.word,
+            sentence: outcome.sentence + ' ' + wrd.word,
+            remaining: outcome.remaining.slice(wrd.word.length)
+          }
+        ]
+        toPush[0].continued = generatePerfectOutcomes(toPush, completed)
+        found.push(toPush)
+      })
+    })
+    return found
+  }
 
   function generateAllPossibleVariations(text) {
     let length = text.length
@@ -43,6 +92,32 @@
     
     if (number == undefined || number == null) {
       return []
+    }
+
+    if (perfect) {
+      number = number.replaceAll(' ', '')
+      let completed = []
+
+      let outcomes = generatePerfectOutcomes(
+        [
+          {
+            subject: "",
+            word: "",
+            sentence: "",
+            remaining: number,
+            continued: []
+          }
+        ],
+        completed
+      )
+
+      let converted = []
+
+      completed.forEach(completion => {
+        converted.push(completion.sentence)
+      })
+
+      return converted
     }
 
     // if there are spaces, check for words, not all variations
@@ -87,12 +162,16 @@
     <p class="hint">This input takes words and converts them into numbers based on a phone's keypad.</p>
     <input type="text" bind:value={words} placeholder="enter words here" class="monospace">
     <p class="monospace results">{foundNumber == undefined ? '' : foundNumber}</p>
-    <p class="monospace" id="sync-box">syncs with other? <input type="checkbox" bind:checked={sync}></p>
+    <div class="options">
+      <div class="monospace" id="sync-box"><input type="checkbox" bind:checked={sync}> sync mode</div>
+      <div class="monospace" id="perfect-box"><input type="checkbox" bind:checked={perfect}> perfect matches (laggy)</div>
+    </div>
   
     <h1>Phone Number to Words</h1>
-    <p class="hint">This input takes numbers and tries to find words that match them based on the keypad's corresponding letters. If spaces are included, we look for matches on words only.</p>
+    <p class="hint">This input takes numbers and tries to find words that match them based on the keypad's corresponding letters. If spaces are included, we look for matches on entire words only.</p>
     <p></p>
     <input type="text" bind:value={number} placeholder="enter numbers here" class="monospace"> 
+    <p>{possibilities.length} results</p>
     <ul class="monospace results">
       {#each possibilities as possibility}
         <li class="monospace">
@@ -139,11 +218,31 @@
     background-color: rgba(143, 255, 57, 0.268);
   }
 
+  .options {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+  }
+
   #sync-box {
+    display: flex;
+    justify-content: left;
+    align-items: center;
     background-color: rgba(2, 122, 149, 0.11);
     padding: 5px;
     margin: 0;
-    width: 230px;
+    width: 100%;
+  }
+
+  #perfect-box {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    background-color: rgba(149, 9, 2, 0.11);
+    padding: 5px;
+    margin: 0;
+    width: 100%;
   }
 
   .hint {
@@ -167,6 +266,12 @@
   input[type=text]:focus {
     outline-width: 0;
   } 
+
+  input[type=checkbox] {
+    height: 20px;
+    width: 20px;
+    margin-right: 20px;
+  }
 
   ul {
     padding-left: 30px;
